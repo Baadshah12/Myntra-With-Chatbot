@@ -14,7 +14,7 @@ const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const { items: cartItems } = useSelector((state: RootState) => state.cart);
-  const { currentUser } = useSelector((state: RootState) => state.user);
+  // const { currentUser } = useSelector((state: RootState) => state.user);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +63,11 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center ">
-            <img className='w-full md:w-1/2 lg:w-1/3 h-auto p-5 max-w-md object-cover' src='https://images.indianexpress.com/2021/01/myntra.png'></img>
+            <img
+              src='https://images.indianexpress.com/2021/01/myntra.png'
+              alt="Myntra Logo"
+              className='h-10 w-auto md:h-12 md:w-32 lg:h-14 lg:w-40 p-2 object-contain'
+            />
           </Link>
 
           {/* Navigation - Desktop */}

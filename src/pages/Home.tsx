@@ -12,6 +12,12 @@ const Home: React.FC = () => {
   const featuredProducts = products.slice(0, 4);
   const newArrivals = products.slice(2, 6);
 
+  // Helper to get first product id for a category
+  const getFirstProductIdForCategory = (categoryId: string) => {
+    const prod = products.find(p => p.category === categoryId);
+    return prod ? prod.id : '';
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -108,22 +114,25 @@ const Home: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                to={`/products?category=${category.id}`}
-                className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300"
-              >
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                  <h3 className="text-white text-lg font-semibold">{category.name}</h3>
-                </div>
-              </Link>
-            ))}
+            {categories.map((category) => {
+              const firstProductId = getFirstProductIdForCategory(category.id);
+              return (
+                <Link
+                  key={category.id}
+                  to={firstProductId ? `/product/${firstProductId}` : '/products'}
+                  className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300"
+                >
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                    <h3 className="text-white text-lg font-semibold">{category.name}</h3>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

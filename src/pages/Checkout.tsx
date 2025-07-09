@@ -10,7 +10,7 @@ const Checkout: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { items, total } = useSelector((state: RootState) => state.cart);
-  
+
   const [address, setAddress] = useState<Address>({
     name: '',
     mobile: '',
@@ -21,6 +21,7 @@ const Checkout: React.FC = () => {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const handleAddressChange = (field: keyof Address, value: string) => {
     setAddress(prev => ({ ...prev, [field]: value }));
@@ -28,19 +29,17 @@ const Checkout: React.FC = () => {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isFormValid) {
       alert('Please fill in all required fields');
       return;
     }
 
     setIsProcessing(true);
-    
+
     try {
-      // Simulate order processing
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Create order (in real app, this would be an API call)
+
       const order = {
         id: Date.now().toString(),
         products: items,
@@ -49,20 +48,20 @@ const Checkout: React.FC = () => {
         status: 'confirmed' as const,
         createdAt: new Date(),
       };
-      
-      // Save order to localStorage for demo
+
       const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
       localStorage.setItem('orders', JSON.stringify([...existingOrders, order]));
-      
-      // Clear cart
+
+      setOrderPlaced(true);        // Show popup before clearing cart
+      setOrderId(order.id);
+
       dispatch(clearCart());
-      
+
       setIsProcessing(false);
-      setOrderPlaced(true);
-      
-      // Redirect to products after 3 seconds
+
       setTimeout(() => {
         setOrderPlaced(false);
+        setOrderId(null);
         navigate('/products');
       }, 3000);
     } catch (error) {
@@ -71,9 +70,15 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const isFormValid = address.name && address.mobile && address.street && address.city && address.state && address.pincode;
+  const isFormValid =
+    address.name &&
+    address.mobile &&
+    address.street &&
+    address.city &&
+    address.state &&
+    address.pincode;
 
-  if (items.length === 0) {
+  if (items.length === 0 && !orderPlaced) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -92,17 +97,16 @@ const Checkout: React.FC = () => {
 
   return (
     <>
-      {/* Order Success Modal */}
       {orderPlaced && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-2xl">
             <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Order Placed Successfully!</h2>
             <p className="text-gray-600 mb-6">
-              Thank you for your order. You will receive a confirmation call shortly.
+              Thank you for your order. Your order is confirmed and will be delivered to your address.
             </p>
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-green-800 font-medium">Order ID: #{Date.now()}</p>
+              <p className="text-sm text-green-800 font-medium">Order ID: #{orderId}</p>
               <p className="text-sm text-green-600">Total: ₹{total}</p>
             </div>
             <p className="text-sm text-gray-500">
@@ -126,81 +130,28 @@ const Checkout: React.FC = () => {
                 <MapPin className="text-pink-500 mr-3" size={24} />
                 <h2 className="text-xl font-semibold">Delivery Address</h2>
               </div>
-              
+
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    value={address.name}
-                    onChange={(e) => handleAddressChange('name', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number *</label>
-                  <input
-                    type="tel"
-                    value={address.mobile}
-                    onChange={(e) => handleAddressChange('mobile', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    placeholder="Enter mobile number"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Street Address *</label>
-                  <input
-                    type="text"
-                    value={address.street}
-                    onChange={(e) => handleAddressChange('street', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    placeholder="Enter street address"
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                {[
+                  { label: 'Full Name *', field: 'name', placeholder: 'Enter your full name' },
+                  { label: 'Mobile Number *', field: 'mobile', placeholder: 'Enter mobile number' },
+                  { label: 'Street Address *', field: 'street', placeholder: 'Enter street address' },
+                  { label: 'City *', field: 'city', placeholder: 'Enter city' },
+                  { label: 'State *', field: 'state', placeholder: 'Enter state' },
+                  { label: 'Pincode *', field: 'pincode', placeholder: 'Enter pincode' },
+                ].map(({ label, field, placeholder }) => (
+                  <div key={field}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
                     <input
                       type="text"
-                      value={address.city}
-                      onChange={(e) => handleAddressChange('city', e.target.value)}
+                      value={address[field as keyof Address]}
+                      onChange={(e) => handleAddressChange(field as keyof Address, e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                      placeholder="Enter city"
+                      placeholder={placeholder}
                       required
                     />
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
-                    <input
-                      type="text"
-                      value={address.state}
-                      onChange={(e) => handleAddressChange('state', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                      placeholder="Enter state"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Pincode *</label>
-                  <input
-                    type="text"
-                    value={address.pincode}
-                    onChange={(e) => handleAddressChange('pincode', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    placeholder="Enter pincode"
-                    required
-                  />
-                </div>
+                ))}
               </div>
             </div>
 
@@ -210,7 +161,7 @@ const Checkout: React.FC = () => {
                 <Package className="text-pink-500 mr-3" size={24} />
                 <h2 className="text-xl font-semibold">Order Summary</h2>
               </div>
-              
+
               <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
                 {items.map((item, index) => (
                   <div key={`${item.product.id}-${item.size}-${item.color}-${index}`} className="flex items-center space-x-3 p-3 border rounded-lg">
@@ -231,18 +182,18 @@ const Checkout: React.FC = () => {
                   </div>
                 ))}
               </div>
-              
+
               <div className="border-t pt-4 space-y-3">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total Amount:</span>
                   <span>₹{total}</span>
                 </div>
-                
+
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <p className="text-sm text-green-800 font-medium">Payment Method: Cash on Delivery</p>
                   <p className="text-xs text-green-600 mt-1">Pay when you receive your order</p>
                 </div>
-                
+
                 <button
                   type="submit"
                   disabled={!isFormValid || isProcessing}
@@ -250,7 +201,7 @@ const Checkout: React.FC = () => {
                 >
                   {isProcessing ? 'Placing Order...' : `Place Order (₹${total})`}
                 </button>
-                
+
                 <p className="text-xs text-gray-500 text-center">
                   By placing this order, you agree to our terms and conditions
                 </p>
